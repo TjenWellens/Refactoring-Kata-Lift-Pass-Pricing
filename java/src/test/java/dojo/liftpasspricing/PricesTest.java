@@ -1,21 +1,20 @@
 package dojo.liftpasspricing;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-
+import io.restassured.RestAssured;
+import io.restassured.path.json.JsonPath;
+import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import io.restassured.RestAssured;
-import io.restassured.path.json.JsonPath;
-import io.restassured.specification.RequestSpecification;
 import spark.Spark;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PricesTest {
 
@@ -54,6 +53,14 @@ public class PricesTest {
         assertEquals(35, cost);
     }
 
+    @Test
+    public void defaultCostMultiplePeople() {
+        final int amountOfTickets = 3;
+        JsonPath json = obtainPrice("type", "1jour", "amountOfTickets", Integer.toString(amountOfTickets));
+        int cost = json.get("cost");
+        assertEquals(amountOfTickets * 35, cost);
+    }
+
     @ParameterizedTest
     @CsvSource({ "5, 0", //
                  "6, 25", //
@@ -72,7 +79,7 @@ public class PricesTest {
     public void realNightCost() {
         JsonPath json = obtainPrice("type", "night");
         int cost = json.get("cost");
-        assertEquals(0, cost); 
+        assertEquals(0, cost);
     }
 
     @Test
@@ -80,14 +87,14 @@ public class PricesTest {
     public void defaultNightCost() {
         JsonPath json = obtainPrice("type", "night");
         int cost = json.get("cost");
-        assertEquals(19, cost); 
+        assertEquals(19, cost);
     }
-    
+
     @ParameterizedTest
     @CsvSource({ "5, 0", //
                  "6, 19", //
                  "25, 19", //
-                 "64, 19", // 
+                 "64, 19", //
                  "65, 8" })
     public void worksForNightPasses(int age, int expectedCost) {
         JsonPath json = obtainPrice("type", "night", "age", age);
@@ -96,7 +103,7 @@ public class PricesTest {
     }
 
     @ParameterizedTest
-    @CsvSource({ "15, '2019-02-22', 35", // 
+    @CsvSource({ "15, '2019-02-22', 35", //
                  "15, '2019-02-25', 35", //
                  "15, '2019-03-11', 23", //
                  "65, '2019-03-11', 18" })
@@ -105,16 +112,16 @@ public class PricesTest {
         int cost = json.get("cost");
         assertEquals(expectedCost, cost);
     }
-    
+
     // TODO 2-4, and 5, 6 day pass
-    
+
     private RequestSpecification given() {
         return RestAssured.given().
             accept("application/json").
             // port(4567);
             port(port());
     }
-    
+
     /**
      * Determine port dynamic to test other languages.
      */
@@ -143,10 +150,10 @@ public class PricesTest {
             case "akka":
                 return 5010;
             default:
-                throw new IllegalArgumentException("Unknown language \"" + language + "\""); 
+                throw new IllegalArgumentException("Unknown language \"" + language + "\"");
         }
     }
-    
+
     private JsonPath obtainPrice(String paramName, Object paramValue, Object... otherParamPairs) {
         return given().
         when().
